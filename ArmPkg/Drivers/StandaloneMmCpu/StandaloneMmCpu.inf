@@ -41,6 +41,7 @@
   gEdkiiPiMmCpuDriverEpProtocolGuid                      # PROTOCOL ALWAYS_PRODUCED
 
 [Guids]
+  gArmFfaVirtualTimerEventGuid
   gEfiHobListGuid
   gEfiMmPeiMmramMemoryReserveGuid
   gZeroGuid

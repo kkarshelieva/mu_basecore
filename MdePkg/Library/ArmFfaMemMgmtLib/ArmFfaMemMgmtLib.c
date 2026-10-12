@@ -381,6 +381,59 @@ ArmFfaMemLibRetrieveReq (
   return EFI_SUCCESS;
 }
 
+EFI_STATUS
+EFIAPI
+ArmFfaMemLibRetrieveReqNsSupport (
+  IN UINT32   TotalLength,
+  IN UINT32   FragmentLength,
+  IN VOID     *BufferAddr,
+  IN UINT32   PageCount,
+  OUT UINT32  *RespTotalLength,
+  OUT UINT32  *RespFragmentLength
+  )
+{
+  ARM_FFA_ARGS  FfaArgs;
+  EFI_STATUS    Status;
+
+  if ((RespTotalLength == NULL) || (RespFragmentLength == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Handle is NULL\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  FfaArgs.Arg0 = ((UINTN)BufferAddr > MAX_UINT32) ? ARM_FID_FFA_MEM_RETRIEVE_REQ_AARCH64 : ARM_FID_FFA_MEM_RETRIEVE_REQ_AARCH32;
+
+  Status = ArmFfaLibGetFeatures (
+             FfaArgs.Arg0,
+             FFA_FEATURES_MEM_RETRIEVE_REQ_NS_SUPPORT,
+             &FfaArgs.Arg1,
+             &FfaArgs.Arg2
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to get FFA_MEM_RETRIEVE_REQ feature... Status: %r\n", __func__, Status));
+    *RespTotalLength    = 0U;
+    *RespFragmentLength = 0U;
+    return Status;
+  }
+
+  FfaArgs.Arg1 = TotalLength;
+  FfaArgs.Arg2 = FragmentLength;
+  FfaArgs.Arg3 = (UINTN)BufferAddr;
+  FfaArgs.Arg4 = PageCount;
+
+  ArmCallFfa (&FfaArgs);
+
+  if (FfaArgs.Arg0 == ARM_FID_FFA_ERROR) {
+    *RespTotalLength    = 0U;
+    *RespFragmentLength = 0U;
+    return FfaStatusToEfiStatus (FfaArgs.Arg2);
+  }
+
+  ASSERT (FfaArgs.Arg0 == ARM_FID_FFA_MEM_RETRIEVE_RESP);
+  *RespTotalLength    = FfaArgs.Arg1;
+  *RespFragmentLength = FfaArgs.Arg2;
+  return EFI_SUCCESS;
+}
+
 /**
   @brief      Requests completion of a donate, lend or share memory management
               transaction through Rx/Tx buffer.

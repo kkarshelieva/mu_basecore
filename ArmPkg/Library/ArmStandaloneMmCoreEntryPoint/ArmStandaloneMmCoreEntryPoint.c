@@ -23,6 +23,7 @@
 #include <PiMm.h>
 
 #include <PiPei.h>
+#include <Guid/ArmFfaVirtualTimerEvent.h>
 #include <Guid/MmramMemoryReserve.h>
 
 #include <Library/ArmLib.h>
@@ -866,6 +867,10 @@ DelegatedEventLoop (
   CommData = NULL;
 
   while (TRUE) {
+    CommBufferAddr = 0;
+    CommData       = NULL;
+    ServiceType    = ServiceTypeUnknown;
+
     // Exit to SPMC.
     ArmCallSvc (EventCompleteSvcArgs);
     // Enter from SPMC.
@@ -881,6 +886,36 @@ DelegatedEventLoop (
     DEBUG ((DEBUG_INFO, "X7 :  0x%x\n", (UINT32)EventCompleteSvcArgs->Arg7));
 
     if (CommProtocol == CommProtocolFfa) {
+      //
+      // FFA_INTERRUPT uses X2 as the virtual interrupt ID, unlike the direct
+      // message register convention handled below.
+      //
+      if (EventCompleteSvcArgs->Arg0 == ARM_FID_FFA_INTERRUPT) {
+        if ((EventCompleteSvcArgs->Arg1 != 0) ||
+            (EventCompleteSvcArgs->Arg2 != ARM_FFA_VIRTUAL_TIMER_INTERRUPT_ID))
+        {
+          DEBUG ((
+            DEBUG_ERROR,
+            "Error: Unsupported FF-A interrupt, X1=0x%lx X2=0x%lx\n",
+            EventCompleteSvcArgs->Arg1,
+            EventCompleteSvcArgs->Arg2
+            ));
+        } else {
+          Status = CpuDriverEntryPoint (ARM_FID_FFA_INTERRUPT, 0);
+          if (EFI_ERROR (Status)) {
+            DEBUG ((DEBUG_ERROR, "Error: FF-A timer interrupt dispatch failed: %r\n", Status));
+          }
+        }
+
+        //
+        // The interrupt is complete. Return to the SPMC and wait for the next
+        // event instead of interpreting these registers as a direct message.
+        //
+        ZeroMem (EventCompleteSvcArgs, sizeof (*EventCompleteSvcArgs));
+        EventCompleteSvcArgs->Arg0 = ARM_FID_FFA_WAIT;
+        continue;
+      }
+
       /*
        * Register Convention for FF-A
        *   Arg0: ARM_FID_FFA_MSG_SEND_DIRECT_REQ/REQ2

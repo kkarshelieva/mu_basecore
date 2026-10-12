@@ -270,6 +270,10 @@ typedef struct {
 **/
 #define FFA_MEMORY_REGION_FLAG_BYPASS_BORROWERS_CHECK  (0x1U << 10)
 
+/// FFA_FEATURES property indicating support for the NS bit in
+/// FFA_MEM_RETRIEVE_RESP.
+#define FFA_FEATURES_MEM_RETRIEVE_REQ_NS_SUPPORT  (0x1U << 1)
+
 /**
   Information about a set of pages which are being shared.
 

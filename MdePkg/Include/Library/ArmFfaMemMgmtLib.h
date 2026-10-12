@@ -189,6 +189,36 @@ ArmFfaMemLibRetrieveReq (
   );
 
 /**
+  @brief      Requests retrieval of a memory transaction and advertises
+              support for the NS bit in FFA_MEM_RETRIEVE_RESP.
+
+  @param[in]  TotalLength         Total length of the memory transaction descriptor
+                                  in bytes
+  @param[in]  FragmentLength      Length in bytes of the memory transaction descriptor
+                                  passed in this ABI invocation
+  @param[in]  BufferAddr          Base address of a buffer allocated by the Owner
+                                  and distinct from the TX buffer
+  @param[in]  PageCount           Number of 4K pages in the buffer allocated by
+                                  the Owner and distinct from the TX buffer
+  @param[out] RespTotalLength     Total length of the response memory transaction
+                                  descriptor in bytes
+  @param[out] RespFragmentLength  Length in bytes of the response memory transaction
+                                  descriptor passed in this ABI invocation
+
+  @retval     The translated FF-A error status code
+**/
+EFI_STATUS
+EFIAPI
+ArmFfaMemLibRetrieveReqNsSupport (
+  IN UINT32   TotalLength,
+  IN UINT32   FragmentLength,
+  IN VOID     *BufferAddr,
+  IN UINT32   PageCount,
+  OUT UINT32  *RespTotalLength,
+  OUT UINT32  *RespFragmentLength
+  );
+
+/**
   @brief      Requests completion of a donate, lend or share memory management
               transaction through Rx/Tx buffer.
 

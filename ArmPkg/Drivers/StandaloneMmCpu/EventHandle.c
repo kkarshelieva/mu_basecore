@@ -12,12 +12,15 @@
 #include <Base.h>
 #include <Pi/PiMmCis.h>
 
+#include <IndustryStandard/ArmFfaSvc.h>
+
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
 
 #include <Protocol/DebugSupport.h> // for EFI_SYSTEM_CONTEXT
 
+#include <Guid/ArmFfaVirtualTimerEvent.h>
 #include <Guid/ZeroGuid.h>
 #include <Guid/MmramMemoryReserve.h>
 
@@ -78,6 +81,24 @@ PiMmStandaloneMmCpuDriverEntry (
   DEBUG ((DEBUG_INFO, "Received event - 0x%x\n", EventId));
 
   Status = EFI_SUCCESS;
+
+  if (EventId == ARM_FID_FFA_INTERRUPT) {
+    if (CommBufferAddr != 0) {
+      return EFI_INVALID_PARAMETER;
+    }
+
+    mMmst->CurrentlyExecutingCpu = 0;
+    mMmst->NumberOfCpus          = 1;
+    mMmst->CpuSaveStateSize      = 0;
+    mMmst->CpuSaveState          = NULL;
+
+    return mMmst->MmiManage (
+                    &gArmFfaVirtualTimerEventGuid,
+                    NULL,
+                    NULL,
+                    NULL
+                    );
+  }
 
   // Perform parameter validation of NsCommBufferAddr
   if (CommBufferAddr == (UINTN)NULL) {
